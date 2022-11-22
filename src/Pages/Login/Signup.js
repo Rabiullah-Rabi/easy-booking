@@ -1,12 +1,22 @@
 import React, { useContext } from "react";
 
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import PrimaryButton from "../../Components/Button/PrimaryButton";
 import { AuthContext } from "../../contexts/AuthProvider";
 import toast from "react-hot-toast";
+import { setAuthToken } from "../../api/auth";
 const Signup = () => {
-  const { createUser, updateUserProfile, verifyEmail, signInWithGoogle } =
-    useContext(AuthContext);
+  const {
+    createUser,
+    updateUserProfile,
+    verifyEmail,
+    signInWithGoogle,
+    loading,
+    setLoading,
+  } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
   const handleSubmit = (event) => {
     event.preventDefault();
     const form = event.target;
@@ -29,24 +39,32 @@ const Signup = () => {
         // create user
         createUser(email, password)
           .then((result) => {
+            setAuthToken(result.user);
+
             updateUserProfile(name, userProfile)
               .then(
                 verifyEmail().then(() => {
                   toast.success(
                     "Please Check your email to Verify Your account"
                   );
+                  navigate(from, { replace: true });
                 })
               )
               .catch((error) => console.error(error));
           })
-          .catch((error) => console.error(error));
+          .catch((error) => {
+            console.error(error);
+            setLoading(false);
+          });
       })
       .catch((error) => console.error(error));
   };
   const handleGoogle = () => {
     signInWithGoogle().then((result) => {
       const user = result.user;
-      console.log(user);
+      setAuthToken(user);
+
+      navigate(from, { replace: true });
     });
   };
   return (
